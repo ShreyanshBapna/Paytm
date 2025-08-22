@@ -12,9 +12,19 @@ async function connect(){
 connect();
 
 const UserSchema = new Schema ({
-    username: String,
-    password: String,
-    email : String
+    username: {
+        type: String,
+        require: true,
+    },
+    password: {
+        type: String,
+        require: true,
+    },
+    email: {
+        type: String,
+        require: true,
+        unique: true
+    }
 });
 
 export const userModel = mongoose.model('User', UserSchema);

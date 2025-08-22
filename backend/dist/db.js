@@ -47,9 +47,19 @@ async function connect() {
 }
 connect();
 const UserSchema = new mongoose_1.Schema({
-    username: String,
-    password: String,
-    email: String
+    username: {
+        type: String,
+        require: true,
+    },
+    password: {
+        type: String,
+        require: true,
+    },
+    email: {
+        type: String,
+        require: true,
+        unique: true
+    }
 });
 exports.userModel = mongoose_1.default.model('User', UserSchema);
 //# sourceMappingURL=db.js.map
