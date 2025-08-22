@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userModel = void 0;
+exports.userModel = exports.transactionModel = exports.accountModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -46,8 +46,13 @@ async function connect() {
     }
 }
 connect();
+// User Schema
 const UserSchema = new mongoose_1.Schema({
-    username: {
+    firstname: {
+        type: String,
+        require: true,
+    },
+    lastname: {
         type: String,
         require: true,
     },
@@ -61,5 +66,40 @@ const UserSchema = new mongoose_1.Schema({
         unique: true
     }
 });
+// Transaction Schemas
+const TransactionSchema = new mongoose_1.default.Schema({
+    from: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    to: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true
+    },
+    date: {
+        type: Date,
+        default: Date.now
+    }
+});
+// Account Schema
+const accountSchema = new mongoose_1.default.Schema({
+    userId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+    },
+    balance: {
+        type: Number,
+        default: 0,
+    }
+});
+exports.accountModel = mongoose_1.default.model('Account', accountSchema);
+exports.transactionModel = mongoose_1.default.model('Transaction', TransactionSchema);
 exports.userModel = mongoose_1.default.model('User', UserSchema);
 //# sourceMappingURL=db.js.map

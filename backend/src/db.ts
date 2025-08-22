@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
 import dotenv from "dotenv";
+import { required } from "zod/mini";
 dotenv.config();
 
 async function connect(){
@@ -11,8 +12,13 @@ async function connect(){
 
 connect();
 
+// User Schema
 const UserSchema = new Schema ({
-    username: {
+    firstname: {
+        type: String,
+        require: true,
+    },
+    lastname: {
         type: String,
         require: true,
     },
@@ -27,6 +33,46 @@ const UserSchema = new Schema ({
     }
 });
 
+// Transaction Schemas
+const TransactionSchema = new mongoose.Schema({
+    from: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    to: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true
+    },
+    date: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// Account Schema
+const accountSchema = new mongoose.Schema({
+    userId : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true, 
+    },
+    balance: {
+        type: Number,
+        default: 0,
+    }
+});
+
+
+
+export const accountModel = mongoose.model('Account', accountSchema);
+export const transactionModel = mongoose.model('Transaction', TransactionSchema);
 export const userModel = mongoose.model('User', UserSchema);
+
 
 

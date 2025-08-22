@@ -2,7 +2,7 @@ import express, { Request, Response } from "express"
 import { userModel } from "../db";
 import bcrypt, { hash } from "bcrypt";
 import jwt from "jsonwebtoken";
-import zod, { email } from "zod";
+import zod, { email, optional } from "zod";
 
 import dotenv from "dotenv";
 import { authMiddleware } from "../middleware";
@@ -11,13 +11,15 @@ dotenv.config();
 const userRouter = express.Router();
 
 const signupSchema = zod.object({
-    username : zod.string().min(5), 
-    password : zod.string().regex(/^[a-zA-Z0-9]+$/, "Username can only contain letters and numbers"),
-    email : zod.string().email(),
+    firstname: zod.string().min(5).trim(), 
+    lastname: zod.string().max(20).trim() , 
+    password: zod.string().regex(/^[a-zA-Z0-9]+$/, "Username can only contain letters and numbers"),
+    email: zod.string().email(),
 })
 
+// signup route
 userRouter.post("/signup", async (req: Request, res : Response) => {
-    const { username, password, email } = req.body;
+    const { firstname, lastname, password, email } = req.body;
 
     // check if the req.body is valid or not
     const {success} = signupSchema.safeParse(req.body);
@@ -30,7 +32,7 @@ userRouter.post("/signup", async (req: Request, res : Response) => {
 
         if(user){
             return res.json({
-                message: "User already exists"
+                message: "User already exists with this email id"
             })
         }
         // hash the password
@@ -39,7 +41,8 @@ userRouter.post("/signup", async (req: Request, res : Response) => {
         try {
             // create the user
             const response = await userModel.create({
-                username,
+                firstname,
+                lastname,
                 password: hashPassowrd,
                 email
             })
@@ -60,6 +63,7 @@ userRouter.post("/signup", async (req: Request, res : Response) => {
     }
 })
 
+// signin route
 userRouter.post("/signin", async (req: Request, res : Response) => {
     const { password, email } = req.body;
     
@@ -103,11 +107,12 @@ const updateBody = zod.object({
     password: zod.string().optional()
 })
 
+// update user details
 userRouter.put("/update", authMiddleware, async (req: Request, res: Response) => {
     const { success } = updateBody.safeParse(req.body);
     // @ts-ignore
     const userId = req.userId;
-    
+
     try {
         if(success){
             const user = await userModel.updateOne({_id: userId}, req.body);
@@ -126,6 +131,35 @@ userRouter.put("/update", authMiddleware, async (req: Request, res: Response) =>
         })
     }
 })
+
+// search users
+userRouter.get("/bulk", async (req: Request, res: Response) => {
+    const filter = req.query.filter || "";
+
+    const users = await userModel.find({
+        $or: [
+            { firstname: { $regex: filter, $options: "i"} },
+            { lastname: { $regex: filter, $options: "i" } }
+        ]
+    });
+    if(JSON.stringify(users) === JSON.stringify([])){
+        return res.json({
+            message: "No user found"
+        })
+    } else {
+        return res.json({
+            users: users.map((user) => {
+                return {
+                    id: user._id,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    email: user.email
+                }
+            })
+        })
+    }
+}) 
+
 
 
 export default userRouter;

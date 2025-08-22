@@ -13,12 +13,14 @@ const middleware_1 = require("../middleware");
 dotenv_1.default.config();
 const userRouter = express_1.default.Router();
 const signupSchema = zod_1.default.object({
-    username: zod_1.default.string().min(5),
+    firstname: zod_1.default.string().min(5).trim(),
+    lastname: zod_1.default.string().max(20).trim(),
     password: zod_1.default.string().regex(/^[a-zA-Z0-9]+$/, "Username can only contain letters and numbers"),
     email: zod_1.default.string().email(),
 });
+// signup route
 userRouter.post("/signup", async (req, res) => {
-    const { username, password, email } = req.body;
+    const { firstname, lastname, password, email } = req.body;
     // check if the req.body is valid or not
     const { success } = signupSchema.safeParse(req.body);
     if (success) {
@@ -28,7 +30,7 @@ userRouter.post("/signup", async (req, res) => {
         });
         if (user) {
             return res.json({
-                message: "User already exists"
+                message: "User already exists with this email id"
             });
         }
         // hash the password
@@ -36,7 +38,8 @@ userRouter.post("/signup", async (req, res) => {
         try {
             // create the user
             const response = await db_1.userModel.create({
-                username,
+                firstname,
+                lastname,
                 password: hashPassowrd,
                 email
             });
@@ -57,6 +60,7 @@ userRouter.post("/signup", async (req, res) => {
         });
     }
 });
+// signin route
 userRouter.post("/signin", async (req, res) => {
     const { password, email } = req.body;
     try {
@@ -97,6 +101,7 @@ const updateBody = zod_1.default.object({
     username: zod_1.default.string().optional(),
     password: zod_1.default.string().optional()
 });
+// update user details
 userRouter.put("/update", middleware_1.authMiddleware, async (req, res) => {
     const { success } = updateBody.safeParse(req.body);
     // @ts-ignore
@@ -118,6 +123,33 @@ userRouter.put("/update", middleware_1.authMiddleware, async (req, res) => {
         return res.status(500).json({
             message: "Something went wrong",
             error: e
+        });
+    }
+});
+// search users
+userRouter.get("/bulk", async (req, res) => {
+    const filter = req.query.filter || "";
+    const users = await db_1.userModel.find({
+        $or: [
+            { firstname: { $regex: filter, $options: "i" } },
+            { lastname: { $regex: filter, $options: "i" } }
+        ]
+    });
+    if (JSON.stringify(users) === JSON.stringify([])) {
+        return res.json({
+            message: "No user found"
+        });
+    }
+    else {
+        return res.json({
+            users: users.map((user) => {
+                return {
+                    id: user._id,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    email: user.email
+                };
+            })
         });
     }
 });
